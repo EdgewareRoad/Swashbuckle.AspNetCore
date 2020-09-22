@@ -9,7 +9,9 @@ using Microsoft.OpenApi.Models;
 using Basic.Swagger;
 using Microsoft.AspNetCore.Localization;
 using System.IO;
-using System.Linq;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.Extensions.Primitives;
+using Microsoft.AspNetCore.Http;
 
 namespace Basic
 {
@@ -74,6 +76,7 @@ namespace Basic
                 endpoints.MapControllers();
                 endpoints.MapSwagger("swagger/{documentName}/swagger.json");
             });
+
             var supportedCultures = new[]
             {
                 new CultureInfo("en-US"),
