@@ -1,6 +1,6 @@
 ﻿namespace Swashbuckle.AspNetCore.TestSupport
 {
-    public class ComplexType2
+    public class TypeWithNullableProperties
     {
         public int IntProperty { get; set; }
 

@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
+﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.OpenApi.Models;
 using AnnotationsDataType = System.ComponentModel.DataAnnotations.DataType;
@@ -9,33 +7,18 @@ namespace Swashbuckle.AspNetCore.SwaggerGen
 {
     public static class OpenApiSchemaExtensions
     {
-        public static void ApplyCustomAttributes(this OpenApiSchema schema, IEnumerable<object> customAttributes)
+        public static void ApplyValidationAttributes(this OpenApiSchema schema, IEnumerable<object> customAttributes)
         {
             foreach (var attribute in customAttributes)
             {
-                if (attribute is CreditCardAttribute creditCardAttribute)
-                    ApplyCreditCardAttribute(schema, creditCardAttribute);
-
-                else if (attribute is DataTypeAttribute dataTypeAttribute)
+                if (attribute is DataTypeAttribute dataTypeAttribute)
                     ApplyDataTypeAttribute(schema, dataTypeAttribute);
-
-                else if (attribute is DefaultValueAttribute defaultValueAttribute)
-                    ApplyDefaultValueAttribute(schema, defaultValueAttribute);
-
-                else if (attribute is EmailAddressAttribute emailAddressAttribute)
-                    ApplyEmailAddressAttribute(schema, emailAddressAttribute);
-
-                else if (attribute is MaxLengthAttribute maxLengthAttribute)
-                    ApplyMaxLengthAttribute(schema, maxLengthAttribute);
 
                 else if (attribute is MinLengthAttribute minLengthAttribute)
                     ApplyMinLengthAttribute(schema, minLengthAttribute);
 
-                else if (attribute is ObsoleteAttribute obsoleteAttribute)
-                    ApplyObsoleteAttribute(schema, obsoleteAttribute);
-
-                else if (attribute is PhoneAttribute phoneAttribute)
-                    ApplyPhoneAttribute(schema, phoneAttribute);
+                else if (attribute is MaxLengthAttribute maxLengthAttribute)
+                    ApplyMaxLengthAttribute(schema, maxLengthAttribute);
 
                 else if (attribute is RangeAttribute rangeAttribute)
                     ApplyRangeAttribute(schema, rangeAttribute);
@@ -43,25 +26,31 @@ namespace Swashbuckle.AspNetCore.SwaggerGen
                 else if (attribute is RegularExpressionAttribute regularExpressionAttribute)
                     ApplyRegularExpressionAttribute(schema, regularExpressionAttribute);
 
-                else if (attribute is RequiredAttribute requiredAttribute)
-                    ApplyRequiredAttribute(schema, requiredAttribute);
-
                 else if (attribute is StringLengthAttribute stringLengthAttribute)
                     ApplyStringLengthAttribute(schema, stringLengthAttribute);
             }
         }
 
-        private static void ApplyCreditCardAttribute(OpenApiSchema schema, CreditCardAttribute creditCardAttribute)
+        public static string ResolveType(this OpenApiSchema schema, SchemaRepository schemaRepository)
         {
-            schema.Format = "credit-card";
+            if (schema.Reference != null && schemaRepository.Schemas.TryGetValue(schema.Reference.Id, out OpenApiSchema definitionSchema))
+                return definitionSchema.ResolveType(schemaRepository);
+
+            foreach (var subSchema in schema.AllOf)
+            {
+                var type = subSchema.ResolveType(schemaRepository);
+                if (type != null) return type;
+            }
+
+            return schema.Type;
         }
 
         private static void ApplyDataTypeAttribute(OpenApiSchema schema, DataTypeAttribute dataTypeAttribute)
         {
             var formats = new Dictionary<AnnotationsDataType, string>
             {
-                { AnnotationsDataType.Date, "date" },
                 { AnnotationsDataType.DateTime, "date-time" },
+                { AnnotationsDataType.Date, "date" },
                 { AnnotationsDataType.Time, "time" },
                 { AnnotationsDataType.Duration, "duration" },
                 { AnnotationsDataType.PhoneNumber, "tel" },
@@ -74,31 +63,13 @@ namespace Swashbuckle.AspNetCore.SwaggerGen
                 { AnnotationsDataType.Url, "uri" },
                 { AnnotationsDataType.ImageUrl, "uri" },
                 { AnnotationsDataType.CreditCard, "credit-card" },
-                { AnnotationsDataType.PostalCode, "postal-code" },
+                { AnnotationsDataType.PostalCode, "postal-code" }
             };
 
             if (formats.TryGetValue(dataTypeAttribute.DataType, out string format))
             {
                 schema.Format = format;
             }
-        }
-
-        private static void ApplyDefaultValueAttribute(OpenApiSchema schema, DefaultValueAttribute defaultValueAttribute)
-        {
-            schema.Default = OpenApiAnyFactory.CreateFor(schema, defaultValueAttribute.Value);
-        }
-
-        private static void ApplyEmailAddressAttribute(OpenApiSchema schema, EmailAddressAttribute emailAddressAttribute)
-        {
-            schema.Format = "email";
-        }
-
-        private static void ApplyMaxLengthAttribute(OpenApiSchema schema, MaxLengthAttribute maxLengthAttribute)
-        {
-            if (schema.Type == "array")
-                schema.MaxItems = maxLengthAttribute.Length;
-            else
-                schema.MaxLength = maxLengthAttribute.Length;
         }
 
         private static void ApplyMinLengthAttribute(OpenApiSchema schema, MinLengthAttribute minLengthAttribute)
@@ -109,14 +80,12 @@ namespace Swashbuckle.AspNetCore.SwaggerGen
                 schema.MinLength = minLengthAttribute.Length;
         }
 
-        private static void ApplyObsoleteAttribute(OpenApiSchema schema, ObsoleteAttribute obsoleteAttribute)
+        private static void ApplyMaxLengthAttribute(OpenApiSchema schema, MaxLengthAttribute maxLengthAttribute)
         {
-            schema.Deprecated = true;
-        }
-
-        private static void ApplyPhoneAttribute(OpenApiSchema schema, PhoneAttribute phoneAttribute)
-        {
-            schema.Format = "tel";
+            if (schema.Type == "array")
+                schema.MaxItems = maxLengthAttribute.Length;
+            else
+                schema.MaxLength = maxLengthAttribute.Length;
         }
 
         private static void ApplyRangeAttribute(OpenApiSchema schema, RangeAttribute rangeAttribute)
@@ -133,11 +102,6 @@ namespace Swashbuckle.AspNetCore.SwaggerGen
         private static void ApplyRegularExpressionAttribute(OpenApiSchema schema, RegularExpressionAttribute regularExpressionAttribute)
         {
             schema.Pattern = regularExpressionAttribute.Pattern;
-        }
-
-        private static void ApplyRequiredAttribute(OpenApiSchema schema, RequiredAttribute requiredAttribute)
-        {
-            schema.Nullable = false;
         }
 
         private static void ApplyStringLengthAttribute(OpenApiSchema schema, StringLengthAttribute stringLengthAttribute)

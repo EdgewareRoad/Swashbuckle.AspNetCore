@@ -183,6 +183,15 @@ namespace Microsoft.Extensions.DependencyInjection
         }
 
         /// <summary>
+        /// Generate inline schema definitions (as opposed to referencing a shared definition) for enum parameters and properties
+        /// </summary>
+        /// <param name="swaggerGenOptions"></param>
+        public static void UseInlineDefinitionsForEnums(this SwaggerGenOptions swaggerGenOptions)
+        {
+            swaggerGenOptions.SchemaGeneratorOptions.UseInlineDefinitionsForEnums = true;
+        }
+
+        /// <summary>
         /// Provide a custom strategy for generating the unique Id's that are used to reference object Schema's
         /// </summary>
         /// <param name="swaggerGenOptions"></param>
@@ -202,24 +211,6 @@ namespace Microsoft.Extensions.DependencyInjection
         public static void IgnoreObsoleteProperties(this SwaggerGenOptions swaggerGenOptions)
         {
             swaggerGenOptions.SchemaGeneratorOptions.IgnoreObsoleteProperties = true;
-        }
-
-        /// <summary>
-        /// Generate inline schema definitions (as opposed to referencing a shared definition) for enum parameters and properties
-        /// </summary>
-        /// <param name="swaggerGenOptions"></param>
-        public static void UseInlineDefinitionsForEnums(this SwaggerGenOptions swaggerGenOptions)
-        {
-            swaggerGenOptions.SchemaGeneratorOptions.UseInlineDefinitionsForEnums = true;
-        }
-
-        /// <summary>
-        /// Extend reference schemas (using the allOf construct) so that contextual metadata can be applied to all parameter and property schemas
-        /// </summary>
-        /// <param name="swaggerGenOptions"></param>
-        public static void UseAllOfToExtendReferenceSchemas(this SwaggerGenOptions swaggerGenOptions)
-        {
-            swaggerGenOptions.SchemaGeneratorOptions.UseAllOfToExtendReferenceSchemas = true;
         }
 
         /// <summary>
@@ -285,6 +276,24 @@ namespace Microsoft.Extensions.DependencyInjection
             Func<Type, string> customSelector)
         {
             swaggerGenOptions.SchemaGeneratorOptions.DiscriminatorValueSelector = customSelector;
+        }
+
+        /// <summary>
+        /// Extend reference schemas (using the allOf construct) so that contextual metadata can be applied to all parameter and property schemas
+        /// </summary>
+        /// <param name="swaggerGenOptions"></param>
+        public static void UseAllOfToExtendReferenceSchemas(this SwaggerGenOptions swaggerGenOptions)
+        {
+            swaggerGenOptions.SchemaGeneratorOptions.UseAllOfToExtendReferenceSchemas = true;
+        }
+
+        /// <summary>
+        /// Enable detection of non nullable reference types to set Nullable flag accordingly on schema properties
+        /// </summary>
+        /// <param name="swaggerGenOptions"></param>
+        public static void SupportNonNullableReferenceTypes(this SwaggerGenOptions swaggerGenOptions)
+        {
+            swaggerGenOptions.SchemaGeneratorOptions.SupportNonNullableReferenceTypes = true;
         }
 
         /// <summary>
@@ -418,19 +427,6 @@ namespace Microsoft.Extensions.DependencyInjection
             swaggerGenOptions.IncludeXmlComments(() => new XPathDocument(filePath), includeControllerXmlComments);
         }
 
-
-        [Obsolete("If the serializer is configured for string enums (e.g. StringEnumConverter) Swashbuckle will reflect that automatically")]
-        public static void DescribeAllEnumsAsStrings(this SwaggerGenOptions swaggerGenOptions)
-        {
-            swaggerGenOptions.SchemaGeneratorOptions.DescribeAllEnumsAsStrings = true;
-        }
-
-        [Obsolete("If the serializer is configured for (camel-cased) string enums (e.g. StringEnumConverter) Swashbuckle will reflect that automatically")]
-        public static void DescribeStringEnumsInCamelCase(this SwaggerGenOptions swaggerGenOptions)
-        {
-            swaggerGenOptions.SchemaGeneratorOptions.DescribeStringEnumsInCamelCase = true;
-        }
-
         /// <summary>
         /// Generate polymorphic schemas (i.e. "oneOf") based on discovered subtypes.
         /// Deprecated: Use the \"UseOneOfForPolymorphism\" and \"UseAllOfForInheritance\" settings instead
@@ -438,7 +434,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="swaggerGenOptions"></param>
         /// <param name="subTypesResolver"></param>
         /// <param name="discriminatorSelector"></param>
-        [Obsolete("You can use \"UseOneOfForPolymorphism\", \"UseAllOfForInheritance\" and \"DetectSubTypesUsing\" to configure equivalent behavior")]
+        [Obsolete("You can use \"UseOneOfForPolymorphism\", \"UseAllOfForInheritance\" and \"SelectSubTypesUsing\" to configure equivalent behavior")]
         public static void GeneratePolymorphicSchemas(
             this SwaggerGenOptions swaggerGenOptions,
             Func<Type, IEnumerable<Type>> subTypesResolver = null,

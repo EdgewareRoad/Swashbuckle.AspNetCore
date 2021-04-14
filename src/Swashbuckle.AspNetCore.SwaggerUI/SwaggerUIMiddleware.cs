@@ -1,10 +1,11 @@
 ﻿using System.Reflection;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
-using System.Linq;
 using System.Text;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -12,11 +13,11 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.AspNetCore.StaticFiles;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Http.Extensions;
+using System.Linq;
 
-#if NETCOREAPP3_0
-using IHostingEnvironment = Microsoft.AspNetCore.Hosting.IWebHostEnvironment;
+#if NETSTANDARD2_0
+using IWebHostEnvironment = Microsoft.AspNetCore.Hosting.IHostingEnvironment;
 #endif
 
 namespace Swashbuckle.AspNetCore.SwaggerUI
@@ -31,7 +32,7 @@ namespace Swashbuckle.AspNetCore.SwaggerUI
 
         public SwaggerUIMiddleware(
             RequestDelegate next,
-            IHostingEnvironment hostingEnv,
+            IWebHostEnvironment hostingEnv,
             ILoggerFactory loggerFactory,
             SwaggerUIOptions options)
         {
@@ -54,11 +55,11 @@ namespace Swashbuckle.AspNetCore.SwaggerUI
             if (httpMethod == "GET" && Regex.IsMatch(path, $"^/?{Regex.Escape(_options.RoutePrefix)}/?$",  RegexOptions.IgnoreCase))
             {
                 // Use relative redirect to support proxy environments
-                var relativeRedirectPath = string.IsNullOrEmpty(path) || path.EndsWith("/")
+                var relativeIndexUrl = string.IsNullOrEmpty(path) || path.EndsWith("/")
                     ? "index.html"
                     : $"{path.Split('/').Last()}/index.html";
 
-                RespondWithRedirect(httpContext.Response, relativeRedirectPath);
+                RespondWithRedirect(httpContext.Response, relativeIndexUrl);
                 return;
             }
 
@@ -73,7 +74,7 @@ namespace Swashbuckle.AspNetCore.SwaggerUI
 
         private StaticFileMiddleware CreateStaticFileMiddleware(
             RequestDelegate next,
-            IHostingEnvironment hostingEnv,
+            IWebHostEnvironment hostingEnv,
             ILoggerFactory loggerFactory,
             SwaggerUIOptions options)
         {
@@ -117,7 +118,8 @@ namespace Swashbuckle.AspNetCore.SwaggerUI
                 { "%(DocumentTitle)", _options.DocumentTitle },
                 { "%(HeadContent)", _options.HeadContent },
                 { "%(ConfigObject)", JsonSerializer.Serialize(_options.ConfigObject, _jsonSerializerOptions) },
-                { "%(OAuthConfigObject)", JsonSerializer.Serialize(_options.OAuthConfigObject, _jsonSerializerOptions) }
+                { "%(OAuthConfigObject)", JsonSerializer.Serialize(_options.OAuthConfigObject, _jsonSerializerOptions) },
+                { "%(Interceptors)", JsonSerializer.Serialize(_options.Interceptors) },
             };
         }
     }

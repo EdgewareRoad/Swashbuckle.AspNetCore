@@ -38,7 +38,7 @@ namespace Swashbuckle.AspNetCore.SwaggerGen
                 .Where(apiDesc => !(_options.IgnoreObsoleteActions && apiDesc.CustomAttributes().OfType<ObsoleteAttribute>().Any()))
                 .Where(apiDesc => _options.DocInclusionPredicate(documentName, apiDesc));
 
-            var schemaRepository = new SchemaRepository();
+            var schemaRepository = new SchemaRepository(documentName);
 
             var swaggerDoc = new OpenApiDocument
             {
@@ -58,6 +58,8 @@ namespace Swashbuckle.AspNetCore.SwaggerGen
             {
                 filter.Apply(swaggerDoc, filterContext);
             }
+
+            swaggerDoc.Components.Schemas = new SortedDictionary<string, OpenApiSchema>(swaggerDoc.Components.Schemas);
 
             return swaggerDoc;
         }
@@ -198,7 +200,7 @@ namespace Swashbuckle.AspNetCore.SwaggerGen
                 || apiParameter.CustomAttributes().Any(attr => RequiredAttributeTypes.Contains(attr.GetType()));
 
             var schema = (apiParameter.ModelMetadata != null)
-                ? _schemaGenerator.GenerateSchema(
+                ? GenerateSchema(
                     apiParameter.ModelMetadata.ModelType,
                     schemaRepository,
                     apiParameter.PropertyInfo(),
@@ -226,6 +228,24 @@ namespace Swashbuckle.AspNetCore.SwaggerGen
             }
 
             return parameter;
+        }
+
+        private OpenApiSchema GenerateSchema(
+            Type type,
+            SchemaRepository schemaRepository,
+            PropertyInfo propertyInfo = null,
+            ParameterInfo parameterInfo = null)
+        {
+            try
+            {
+                return _schemaGenerator.GenerateSchema(type, schemaRepository, propertyInfo, parameterInfo);
+            }
+            catch (Exception ex)
+            {
+                throw new SwaggerGeneratorException(
+                    message: $"Failed to generate schema for type - {type}. See inner exception",
+                    innerException: ex);
+            }
         }
 
         private OpenApiRequestBody GenerateRequestBody(
@@ -282,7 +302,7 @@ namespace Swashbuckle.AspNetCore.SwaggerGen
 
             var isRequired = bodyParameter.CustomAttributes().Any(attr => RequiredAttributeTypes.Contains(attr.GetType()));
 
-            var schema = _schemaGenerator.GenerateSchema(
+            var schema = GenerateSchema(
                 bodyParameter.ModelMetadata.ModelType,
                 schemaRepository,
                 bodyParameter.PropertyInfo(),
@@ -360,7 +380,7 @@ namespace Swashbuckle.AspNetCore.SwaggerGen
                     : formParameter.Name;
 
                 var schema = (formParameter.ModelMetadata != null)
-                    ? _schemaGenerator.GenerateSchema(
+                    ? GenerateSchema(
                         formParameter.ModelMetadata.ModelType,
                         schemaRepository,
                         formParameter.PropertyInfo(),
@@ -443,7 +463,7 @@ namespace Swashbuckle.AspNetCore.SwaggerGen
         {
             return new OpenApiMediaType
             {
-                Schema = _schemaGenerator.GenerateSchema(modelMetadata.ModelType, schemaRespository)
+                Schema = GenerateSchema(modelMetadata.ModelType, schemaRespository)
             };
         }
 
